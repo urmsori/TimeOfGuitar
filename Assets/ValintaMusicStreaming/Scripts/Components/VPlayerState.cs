@@ -73,15 +73,6 @@ namespace ValintaMusicStreaming
             IsError = false;
         }
 
-        public void PlayingAd(string s)
-        {
-            UpdateStatus(s);
-
-            ButtonsEnabled = false;
-            IsStopped = false;
-            IsPaused = false;
-        }
-
         public void MusicPlaybackPause()
         {
             ButtonsEnabled = true;
@@ -102,14 +93,6 @@ namespace ValintaMusicStreaming
             IsStopped = true;
         }
 
-        public void AdPlaybackStop()
-        {
-            ButtonsEnabled = true;
-            ButtonsShown = true;
-            IsPaused = true;
-            IsStopped = true;
-        }
-
         public void PlaybackLoading(string s)
         {
             UpdateStatus(s);
@@ -126,17 +109,6 @@ namespace ValintaMusicStreaming
             IsStopped = true;
             IsPaused = false;
             IsError = true;
-        }
-
-
-
-        public void RetryingLogin(string s)
-        {
-            UpdateStatus(s);
-            ButtonsEnabled = false;
-            IsPaused = true;
-            IsStopped = true;
-            IsError = false;
         }
     }
 }

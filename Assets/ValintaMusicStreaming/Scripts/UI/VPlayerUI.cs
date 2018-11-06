@@ -66,7 +66,12 @@ namespace ValintaMusicStreaming
             m_isInitialized = true;
             m_isPlaylistWindowShown = m_playlistWindow.gameObject.activeInHierarchy;
 
-            ShowSplashWindow();
+            if (!m_playlistWindow.gameObject.activeInHierarchy)
+            {
+                OnMenuClicked();
+            }
+
+            m_splashPrefab.SetActive(true);
         }
 
         void OnEnable()
@@ -74,7 +79,12 @@ namespace ValintaMusicStreaming
             if (!m_isInitialized) return;
             if (m_isRegistered) return;
 
-            ShowSplashWindow();
+            if (!m_playlistWindow.gameObject.activeInHierarchy)
+            {
+                OnMenuClicked();
+            }
+
+            m_splashPrefab.SetActive(true);
             RefreshPlaylists();
 
             Subscribe();
@@ -96,8 +106,6 @@ namespace ValintaMusicStreaming
                 m_buttonSkip.onClick.AddListener(OnSkipClicked);
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.AddListener(OnMenuClicked);
-            if (m_buttonStatus != null)
-                m_buttonStatus.onClick.AddListener(OnStatusClicked);
         }
 
         private void RemoveListeners()
@@ -108,8 +116,6 @@ namespace ValintaMusicStreaming
                 m_buttonSkip.onClick.RemoveAllListeners();
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.RemoveAllListeners();
-            if (m_buttonStatus != null)
-                m_buttonStatus.onClick.RemoveAllListeners();
         }
 
 
@@ -170,65 +176,6 @@ namespace ValintaMusicStreaming
 
         #endregion
 
-
-        #region Banner/Splash
-
-        /// <summary>
-        /// Assign downloaded texture to banner.
-        /// </summary>
-        /// <param name="tex"></param>
-        public void AssignTextureToBanner(Texture2D tex)
-        {
-            Sprite adBanner = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-
-            m_adBannerPrefab.transform.GetChild(0).GetComponent<Image>().sprite = adBanner;
-        }
-
-        /// <summary>
-        /// Show ad banner. If menu is not active, show it.
-        /// </summary>
-        /// <param name="show"></param>
-        public void ShowAdBanner(bool show)
-        {
-            m_splashPrefab.SetActive(false);
-            VSettings.IsSplashWindowShown = true;
-
-            if (!m_playlistWindow.gameObject.activeInHierarchy && !VSettings.IsPreRollAdPlayed)
-            {
-                OnMenuClicked();
-            }
-
-            m_adBannerPrefab.SetActive(show);
-        }
-
-        /// <summary>
-        /// Set URL for banner click.
-        /// </summary>
-        /// <param name="url"></param>
-        public void SetBannerClickUrl(string url)
-        {
-            m_bannerClickUrl = url;
-        }
-
-        /// <summary>
-        /// Show custom splash window. Ideally once per session.
-        /// </summary>
-        public void ShowSplashWindow()
-        {
-            if (VSettings.IsSplashWindowShown) return;
-
-            if (!m_playlistWindow.gameObject.activeInHierarchy)
-            {
-                OnMenuClicked();
-            }
-
-            m_splashPrefab.SetActive(true);
-            VSettings.IsSplashWindowShown = true;
-        }
-
-        #endregion
-
-
         #region Button event handlers
 
         /// <summary>
@@ -268,14 +215,6 @@ namespace ValintaMusicStreaming
                 RefreshPlaylists();
             }
             m_playlistWindow.gameObject.SetActive(m_isPlaylistWindowShown);
-        }
-
-        /// <summary>
-        /// Handle status text(button) click.
-        /// </summary>
-        private void OnStatusClicked()
-        {
-            VPlayerController.Instance.OpenURL();
         }
 
         #endregion

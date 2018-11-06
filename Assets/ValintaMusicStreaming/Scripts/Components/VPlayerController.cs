@@ -49,18 +49,6 @@ namespace ValintaMusicStreaming
             m_timeCounter = 0;
         }
 
-        void Update()
-        {
-            if (!m_playerSessionActive) return;
-            if (VSettings.DataBundleFrequency == 0) return;
-
-            if((Time.realtimeSinceStartup - m_playerSessionStartTime) >= VSettings.DataBundleFrequency)
-            {
-                VAnalytics.Instance.SendSessionDuration(++m_timeCounter);
-                m_playerSessionStartTime = Time.realtimeSinceStartup;
-            }
-        }
-
         // Called when catalogue is downloaded and parsed
         public void CatalogueReady()
         {
@@ -206,20 +194,6 @@ namespace ValintaMusicStreaming
         /// </summary>
         public void Play()
         {
-            // If player is in error state, try to authorize the player again
-            if (m_currentState.IsError)
-            {
-                TryRelogin();
-                return;
-            }
-
-            // No network connection, retryable error
-            if (Application.internetReachability == NetworkReachability.NotReachable)
-            {
-                ShowErrorInUI(VStrings.InternetConnectionError, true);
-                return;
-            }
-
             if (!m_playerSessionActive)
             {
                 m_playerSessionStartTime = Time.realtimeSinceStartup;
@@ -235,7 +209,6 @@ namespace ValintaMusicStreaming
             // If there are no catalogue or playlists, show error. Retryable.
             if (m_catalogue == null || m_catalogue.GetAllPlaylists().Count <= 0)
             {
-                ShowErrorInUI(VStrings.ErrorPlaylists, true);
                 return;
             }
 
@@ -259,7 +232,6 @@ namespace ValintaMusicStreaming
                     else
                     {
                         // Should not go here but handling error just in case
-                        ShowErrorInUI(VStrings.ErrorPlaylists, true);
                         return;
                     }
                 }
@@ -270,11 +242,6 @@ namespace ValintaMusicStreaming
 
                 // Keep track on played songs to get ads played between songs
                 m_songCounter++;
-                // If ad frequency is not set, it won't go here at all = mid roll ads are not played
-                if (m_songCounter >= VSettings.AdFrequency && VSettings.AdFrequency > 0)
-                {
-                    m_playAdNext = true;
-                }
             }
         }
 
@@ -310,7 +277,6 @@ namespace ValintaMusicStreaming
                 return;
             }
 
-            VAnalytics.Instance.SendSongState(m_currentSong, true);
             m_currentState.PlaybackSkip();
 
             Play();
@@ -321,40 +287,10 @@ namespace ValintaMusicStreaming
         /// </summary>
         public void Stop()
         {
-            SetAdBannerActive(false);
             m_musicPlayback.StopPlayback();
 
             m_currentState.MusicPlaybackStop(VStrings.ValintaPlayer);
             UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Opens URL in default browser.
-        /// </summary>
-        public void OpenURL()
-        {
-            string site = string.Empty;
-
-            // Open music provider's landing page
-            if (m_currentSong != null)
-            {
-                site = m_currentSong.Site;
-            }
-
-            // If player is in stand-by and shows valinta player text
-            if (m_currentState.StatusText.Equals(VStrings.ValintaPlayer))
-            {
-                site = "http://www.zemeho.com";
-            }
-
-            if (!string.IsNullOrEmpty(site))
-                Application.OpenURL(site);
-        }
-
-        private void TryRelogin()
-        {
-            ValintaPlayer.Instance.RetryLogin();
-            m_currentState.RetryingLogin(VStrings.Retrying);
         }
 
         #endregion
@@ -376,7 +312,6 @@ namespace ValintaMusicStreaming
         /// </summary>
         private void OnPlaybackGetNext()
         {
-            VAnalytics.Instance.SendSongState(m_currentSong, false);
             Play();
         }
 
@@ -404,7 +339,6 @@ namespace ValintaMusicStreaming
         /// <param name="s"></param>
         private void OnPlaybackError(string s)
         {
-            m_currentState.PlaybackError(VStrings.InternetConnectionError + ": " + s);
             UpdatePlayerUI();
         }
 
@@ -415,54 +349,6 @@ namespace ValintaMusicStreaming
         {
             m_currentState.PlaybackError(VStrings.TimedOut);
             UpdatePlayerUI();
-        }
-
-        #endregion
-
-        #region Ad banner
-
-        /// <summary>
-        /// Set texture for ad banner.
-        /// </summary>
-        /// <param name="tex"></param>
-        public void SetTextureForAdBanner(Texture2D tex)
-        {
-            foreach (VPlayerUI p in m_registeredPlayerUIs)
-            {
-                p.AssignTextureToBanner(tex);
-            }
-        }
-
-        /// <summary>
-        /// Set URL which is opened when ad banner is clicked.
-        /// </summary>
-        /// <param name="url"></param>
-        public void SetURLForBannerClick(string url)
-        {
-            foreach (VPlayerUI p in m_registeredPlayerUIs)
-            {
-                p.SetBannerClickUrl(url);
-            }
-        }
-
-        /// <summary>
-        /// Activate/Deactivate banner object.
-        /// </summary>
-        /// <param name="enable"></param>
-        public void SetAdBannerActive(bool enable)
-        {
-            foreach (VPlayerUI p in m_registeredPlayerUIs)
-            {
-                p.ShowAdBanner(enable);
-            }
-        }
-
-        public void SetSplashActive(bool enable)
-        {
-            foreach (VPlayerUI p in m_registeredPlayerUIs)
-            {
-                p.ShowSplashWindow();
-            }
         }
 
         #endregion
