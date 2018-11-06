@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿//#define DEBUG_LINE
+
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -59,11 +61,13 @@ public class MicInput : MonoBehaviour
             List<KeyValuePair<int, float>> validPeaks = new List<KeyValuePair<int, float>>();
             for (int i = 1; i < mSamples.Length - 1; i++)
             {
+#if DEBUG_LINE
                 // For Debug
                 Debug.DrawLine(new Vector3(i - 1, mSamples[i] + 10, 0), new Vector3(i, mSamples[i + 1] + 10, 0), Color.red);
                 Debug.DrawLine(new Vector3(i - 1, Mathf.Log(mSamples[i - 1]) + 10, 2), new Vector3(i, Mathf.Log(mSamples[i]) + 10, 2), Color.cyan);
                 Debug.DrawLine(new Vector3(Mathf.Log(i - 1), mSamples[i - 1] - 10, 1), new Vector3(Mathf.Log(i), mSamples[i] - 10, 1), Color.green);
                 Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(mSamples[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(mSamples[i]), 3), Color.blue);
+#endif
 
                 // Average 몇 배 이상인 Sample만 챙김
                 if (mSamples[i] / averageLoudness > LOUD_PERCENT_THRESHOLD)
@@ -104,6 +108,7 @@ public class MicInput : MonoBehaviour
                 mNoteList.Add(new TimeAndANote() { Note = note, Time = Time.time });
             }
 
+#if DEBUG_LINE
             // For Debug
             if (targetPeaks.Count > 0)
             {
@@ -118,6 +123,7 @@ public class MicInput : MonoBehaviour
 
                 Debug.DrawLine(new Vector3(Mathf.Log(peak.Key - 1), Mathf.Log(peak.Value), 3), new Vector3(Mathf.Log(peak.Key + 1), Mathf.Log(peak.Value), 3), Color.red);
             }
+#endif
 
         }
 

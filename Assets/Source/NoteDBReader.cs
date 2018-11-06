@@ -49,6 +49,15 @@ public class NoteDBReader : MonoBehaviour
         }
     }
 
+    public ANote NameToNoteOrNull(string name)
+    {
+        if(NoteFromName.ContainsKey(name))
+        {
+            return NoteFromName[name];
+        }
+        return null;
+    }
+
     public ANote AssumeNoteFromFrequency(float frequency)
     {
         var assumeIndex = Mathf.Log(frequency / 15.434f) / 0.0578f;

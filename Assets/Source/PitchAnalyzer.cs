@@ -10,6 +10,7 @@ public class PitchAnalyzer : MonoBehaviour
     
     public List<TimeAndNotes> NoteTimeline = new List<TimeAndNotes>();
     public ANote DonimantNoteOrNull = null;
+
     // Update is called once per frame
     void Update()
     {
