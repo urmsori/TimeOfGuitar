@@ -11,14 +11,12 @@ namespace ValintaMusicStreaming
 
         private VCatalogue m_catalogue;
         private VMusicPlayback m_musicPlayback;
-        private VAdPlayback m_adPlayback;
 
         private List<VPlayerUI> m_registeredPlayerUIs;
         private VPlayerState m_currentState;
 
         private VPlaylist m_currentPlaylist;
         private VSong m_currentSong;
-        private VPlayableAd m_currentAd;
 
         private int m_lastPlayedList;
 
@@ -40,7 +38,6 @@ namespace ValintaMusicStreaming
             m_playerSessionActive = false;
 
             m_musicPlayback = gameObject.AddComponent<VMusicPlayback>();
-            m_adPlayback = gameObject.AddComponent<VAdPlayback>();
         }
 
         void Start()
@@ -94,24 +91,6 @@ namespace ValintaMusicStreaming
             m_musicPlayback.OnPlaybackTimedOut -= OnPlaybackTimedOut;
             m_musicPlayback.OnPlaybackStarted -= OnPlaybackStarted;
             m_musicPlayback.OnPlaybackGetNext -= OnPlaybackGetNext;
-        }
-
-        private void AddAdPlaybackListeners()
-        {
-            m_adPlayback.OnPlaybackError += OnAdPlaybackError;
-            m_adPlayback.OnPlaybackLoading += OnAdPlaybackLoading;
-            m_adPlayback.OnPlaybackCompleted += OnAdPlaybackCompleted;
-            m_adPlayback.OnPlaybackStarted += OnAdPlaybackStarted;
-            m_adPlayback.OnPlaybackSkippable += OnAdPlaybackSkippable;
-        }
-
-        private void RemoveAdPlaybackListeners()
-        {
-            m_adPlayback.OnPlaybackError -= OnAdPlaybackError;
-            m_adPlayback.OnPlaybackLoading -= OnAdPlaybackLoading;
-            m_adPlayback.OnPlaybackCompleted -= OnAdPlaybackCompleted;
-            m_adPlayback.OnPlaybackStarted -= OnAdPlaybackStarted;
-            m_adPlayback.OnPlaybackSkippable -= OnAdPlaybackSkippable;
         }
 
         #endregion
@@ -270,20 +249,6 @@ namespace ValintaMusicStreaming
             }
             else
             {
-                // Get new song or get an ad
-
-                // If pre roll ad is not played yet or if ad should be played next
-                if (!VSettings.IsPreRollAdPlayed || m_playAdNext)
-                {
-                    RemoveMusicPlaybackListeners();
-                    AddAdPlaybackListeners();
-
-                    m_currentSong = null;
-
-                    StartAdPlayback();
-                    return;
-                }
-
                 // No playlist specified (play pressed when player is in stand-by)
                 if (m_currentPlaylist == null)
                 {
@@ -329,43 +294,9 @@ namespace ValintaMusicStreaming
         /// </summary>
         public void Pause()
         {
-            // Pause is forwarded to ad playback if current song is not defined, which should be true
-            // even without VSettings.IsPreRollAdPlayed comparison
-            if (!VSettings.IsPreRollAdPlayed || m_currentSong == null)
-            {
-                m_adPlayback.Pause();
-            }
-            else
-            {
-                m_musicPlayback.Pause();
-            }
-
+            m_musicPlayback.Pause();
             m_currentState.MusicPlaybackPause();
             UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Skip song.
-        /// </summary>
-        public void Skip()
-        {
-            if (m_currentState.IsStopped)
-            {
-                Play();
-                return;
-            }
-
-            VAnalytics.Instance.SendSongState(m_currentSong, true);
-            m_currentState.PlaybackSkip();
-
-            // Skip forwarded to ad playback (see Pause above)
-            if (!VSettings.IsPreRollAdPlayed || m_currentSong == null)
-            {
-                m_adPlayback.Skip();
-                return;
-            }
-
-            Play();
         }
 
         /// <summary>
@@ -391,19 +322,6 @@ namespace ValintaMusicStreaming
             if (m_currentSong != null)
             {
                 site = m_currentSong.Site;
-            }
-
-            // If ad provider has specified URL for status click, open that
-            // Banner clicks are handled differently
-            if (m_currentAd != null)
-            {
-                site = m_currentAd.GetClickUrlForStatus();
-
-                // Prevent pause if site is not defined in ad
-                if (!string.IsNullOrEmpty(site))
-                {
-                    m_adPlayback.Pause();
-                }
             }
 
             // If player is in stand-by and shows valinta player text
@@ -484,50 +402,6 @@ namespace ValintaMusicStreaming
 
         #endregion
 
-
-        #region Ad playback
-
-        /// <summary>
-        /// Ad playback start and resume.
-        /// </summary>
-        private void StartAdPlayback()
-        {
-            if (m_currentState.IsPaused && m_currentAd != null)
-            {
-                m_adPlayback.Resume();
-            }
-            else
-            {
-                m_adPlayback.Play();
-            }
-
-            m_currentState.PlayingAd(string.Empty);
-
-            UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Stop ad playback and get rid of it. Reset song counter.
-        /// </summary>
-        private void StopAdPlayback()
-        {
-            m_currentState.AdPlaybackStop();
-
-            m_currentAd = null;
-            VSettings.IsPreRollAdPlayed = true;
-
-            RemoveAdPlaybackListeners();
-            AddMusicPlaybackListeners();
-
-            m_songCounter = 0;
-            m_playAdNext = false;
-
-            Play();
-        }
-
-        #endregion
-
-
         #region Ad banner
 
         /// <summary>
@@ -574,70 +448,7 @@ namespace ValintaMusicStreaming
             }
         }
 
-        /// <summary>
-        /// Track banner click.
-        /// Pause ad playback if clicked.
-        /// </summary>
-        public void AdBannerClicked()
-        {
-            m_adPlayback.Pause();
-        }
-
         #endregion
-
-
-        #region Ad playback events
-
-        /// <summary>
-        /// Ad playback has started. Update UI based on ad info.
-        /// </summary>
-        /// <param name="ad"></param>
-        private void OnAdPlaybackStarted(VPlayableAd ad)
-        {
-            m_currentAd = ad;
-
-            m_currentState.PlayingAd((m_currentAd.LinkText.Length > 3) ? VStrings.AdvertisementBuff : m_currentAd.LinkText);
-            UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Ad is completed.
-        /// </summary>
-        private void OnAdPlaybackCompleted()
-        {
-            m_currentState.PlayerReady(VStrings.ValintaPlayer);
-            StopAdPlayback();
-        }
-
-        /// <summary>
-        /// Ad is loading.
-        /// </summary>
-        private void OnAdPlaybackLoading()
-        {
-            m_currentState.PlaybackLoading(VStrings.Loading);
-            UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Error occurred in ad playback
-        /// </summary>
-        /// <param name="s"></param>
-        private void OnAdPlaybackError(string s)
-        {
-            StopAdPlayback();
-        }
-
-        /// <summary>
-        /// Some ads may be skippable. Update UI to make skipping possible. 
-        /// </summary>
-        private void OnAdPlaybackSkippable()
-        {
-            m_currentState.PlayerReady(string.Empty);
-            UpdatePlayerUI();
-        }
-
-        #endregion
-
 
         // If player states are needed in some other scripts, examples below.
 

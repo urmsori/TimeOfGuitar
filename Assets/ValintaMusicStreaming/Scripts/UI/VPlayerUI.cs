@@ -92,22 +92,16 @@ namespace ValintaMusicStreaming
         {
             if (m_buttonPlay != null)
                 m_buttonPlay.onClick.AddListener(OnPlayClicked);
-            if (m_buttonSkip != null)
-                m_buttonSkip.onClick.AddListener(OnSkipClicked);
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.AddListener(OnMenuClicked);
             if (m_buttonStatus != null)
                 m_buttonStatus.onClick.AddListener(OnStatusClicked);
-            if (m_adBannerPrefab != null)
-                m_adBannerPrefab.GetComponent<Button>().onClick.AddListener(OnBannerClicked);
         }
 
         private void RemoveListeners()
         {
             if (m_buttonPlay != null)
                 m_buttonPlay.onClick.RemoveAllListeners();
-            if (m_buttonSkip != null)
-                m_buttonSkip.onClick.RemoveAllListeners();
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.RemoveAllListeners();
             if (m_buttonStatus != null)
@@ -252,14 +246,6 @@ namespace ValintaMusicStreaming
         }
 
         /// <summary>
-        /// Handle skip button click.
-        /// </summary>
-        private void OnSkipClicked()
-        {
-            VPlayerController.Instance.Skip();
-        }
-
-        /// <summary>
         /// Handle menu button click.
         /// </summary>
         private void OnMenuClicked()
@@ -278,15 +264,6 @@ namespace ValintaMusicStreaming
         private void OnStatusClicked()
         {
             VPlayerController.Instance.OpenURL();
-        }
-
-        /// <summary>
-        /// Handle banner click. 
-        /// </summary>
-        private void OnBannerClicked()
-        {
-            VPlayerController.Instance.AdBannerClicked();
-            Application.OpenURL(m_bannerClickUrl);
         }
 
         #endregion
