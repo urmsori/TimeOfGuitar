@@ -92,6 +92,8 @@ namespace ValintaMusicStreaming
         {
             if (m_buttonPlay != null)
                 m_buttonPlay.onClick.AddListener(OnPlayClicked);
+            if (m_buttonSkip != null)
+                m_buttonSkip.onClick.AddListener(OnSkipClicked);
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.AddListener(OnMenuClicked);
             if (m_buttonStatus != null)
@@ -102,6 +104,8 @@ namespace ValintaMusicStreaming
         {
             if (m_buttonPlay != null)
                 m_buttonPlay.onClick.RemoveAllListeners();
+            if (m_buttonSkip != null)
+                m_buttonSkip.onClick.RemoveAllListeners();
             if (m_buttonMenu != null)
                 m_buttonMenu.onClick.RemoveAllListeners();
             if (m_buttonStatus != null)
@@ -243,6 +247,14 @@ namespace ValintaMusicStreaming
             {
                 VPlayerController.Instance.Play();
             }
+        }
+
+        /// <summary>
+        /// Handle skip button click.
+        /// </summary>
+        private void OnSkipClicked()
+        {
+            VPlayerController.Instance.Skip();
         }
 
         /// <summary>

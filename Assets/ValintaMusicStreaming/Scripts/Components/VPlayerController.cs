@@ -300,6 +300,23 @@ namespace ValintaMusicStreaming
         }
 
         /// <summary>
+        /// Skip song.
+        /// </summary>
+        public void Skip()
+        {
+            if (m_currentState.IsStopped)
+            {
+                Play();
+                return;
+            }
+
+            VAnalytics.Instance.SendSongState(m_currentSong, true);
+            m_currentState.PlaybackSkip();
+
+            Play();
+        }
+
+        /// <summary>
         /// Stop playback. 
         /// </summary>
         public void Stop()
