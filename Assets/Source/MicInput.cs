@@ -15,8 +15,6 @@ public class MicInput : MonoBehaviour
     private const int SAMPLE_SIZE = 4096;
     private const float LOUD_PERCENT_THRESHOLD = 200.0f;
 
-    private const float FREQUENCY_MAX = 24000.0f;
-
     private AudioSource mAudio;
 
     private float[] mSamples = new float[SAMPLE_SIZE];
@@ -102,7 +100,7 @@ public class MicInput : MonoBehaviour
             // Add Note
             foreach (var peak in targetPeaks)
             {
-                var freq = peak.Key / (float)mSamples.Length * FREQUENCY_MAX;
+                var freq = peak.Key * (AudioSettings.outputSampleRate / 2 ) / (float)mSamples.Length;
                 var note = noteDbReader.AssumeNoteFromFrequency(freq);
 
                 mNoteList.Add(new TimeAndANote() { Note = note, Time = Time.time });
