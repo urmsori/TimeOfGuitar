@@ -44,19 +44,7 @@ namespace ValintaMusicStreaming
         {
             AddMusicPlaybackListeners();
 
-            ShowPlayerInitializingInUI();
-
             m_timeCounter = 0;
-        }
-
-        // Called when catalogue is downloaded and parsed
-        public void CatalogueReady()
-        {
-            m_currentState.CatalogueReady = true;
-            m_catalogue = ValintaPlayer.Instance.GetCatalogueInstance();
-            LoadLastPlayedPlaylist();
-
-            UpdatePlayerUI();
         }
 
         #region Attach/Detach listeners
@@ -138,15 +126,6 @@ namespace ValintaMusicStreaming
         public void ShowPlayerReadyInUI()
         {
             m_currentState.PlayerReady(VStrings.ValintaPlayer);
-            UpdatePlayerUI();
-        }
-
-        /// <summary>
-        /// Announce that player is starting up
-        /// </summary>
-        private void ShowPlayerInitializingInUI()
-        {
-            m_currentState.PlayerInitializing(VStrings.PlayerInitializing);
             UpdatePlayerUI();
         }
 

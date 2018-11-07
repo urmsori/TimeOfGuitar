@@ -8,8 +8,6 @@ namespace ValintaMusicStreaming
         public const string ValintaPlayer = "Guitar of Time";
         public const string ChooseGenre = "Choose playlist or press play";
 
-        public const string PlayerInitializing = "Player initializing";
-
         public const string Loading = "Loading...";
         public const string Paused = "Paused";
         public const string TimedOut = "Timed out";

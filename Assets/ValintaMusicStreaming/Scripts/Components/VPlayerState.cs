@@ -6,7 +6,6 @@ namespace ValintaMusicStreaming
         public string StatusText;
         public bool ButtonsShown = true;
         public bool ButtonsEnabled = true;
-        public bool CatalogueReady = false;
 
         public bool IsPaused = false;
         public bool IsStopped = true;
@@ -19,8 +18,6 @@ namespace ValintaMusicStreaming
             IsPaused = false;
             IsStopped = true;
             IsError = false;
-
-            CatalogueReady = false;
         }
 
         private void Reset()
@@ -53,14 +50,6 @@ namespace ValintaMusicStreaming
             UpdateStatus(s);
             ButtonsEnabled = true;
             ButtonsShown = true;
-            IsError = false;
-        }
-
-        public void PlayerInitializing(string s)
-        {
-            UpdateStatus(s);
-            ButtonsEnabled = false;
-            ButtonsShown = false;
             IsError = false;
         }
 

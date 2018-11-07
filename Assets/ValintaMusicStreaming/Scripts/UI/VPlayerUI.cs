@@ -76,9 +76,6 @@ namespace ValintaMusicStreaming
 
         void OnEnable()
         {
-            if (!m_isInitialized) return;
-            if (m_isRegistered) return;
-
             if (!m_playlistWindow.gameObject.activeInHierarchy)
             {
                 OnMenuClicked();
@@ -163,7 +160,6 @@ namespace ValintaMusicStreaming
             m_statusText.text = state.StatusText;
             ActivateButtons(state.ButtonsShown);
             SetButtonsInteractable(state.ButtonsEnabled);
-            m_isCatalogueReady = state.CatalogueReady;
 
             m_isPlayerPaused = state.IsPaused;
             if (state.IsStopped)
