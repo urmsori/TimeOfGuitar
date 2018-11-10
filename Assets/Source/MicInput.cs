@@ -1,4 +1,4 @@
-﻿//#define DEBUG_LINE
+﻿#define DEBUG_LINE
 
 using System.Collections.Generic;
 using System.Linq;
@@ -10,23 +10,25 @@ public class MicInput : MonoBehaviour
     public string deviceName = null;
     public AnimationCurve curve;
     public NoteDBReader noteDbReader;
-    public float bufferTimeMax = 4.0f;
+    public float bufferTimeMax = 2.0f;
 
     private const int SAMPLE_SIZE = 4096;
-    private const float LOUD_PERCENT_THRESHOLD = 200.0f;
-
-    private const float FREQUENCY_MAX = 24000.0f;
+    private const float LOUD_PERCENT_THRESHOLD = 60.0f;
 
     private AudioSource mAudio;
 
+    private float[] mSamplesRaw = new float[SAMPLE_SIZE];
     private float[] mSamples = new float[SAMPLE_SIZE];
 
     private List<TimeAndANote> mNoteList = new List<TimeAndANote>();
     public List<TimeAndANote> NoteBuffer { get { return mNoteList; } }
 
+    float mFrequencyMax = 24000.0f; //AudioSettings.outputSampleRate / 2
+
     // Use this for initialization
     void Start()
     {
+        mFrequencyMax = AudioSettings.outputSampleRate / 2;
         mAudio = GetComponent<AudioSource>();
 
         var devs = Microphone.devices;
@@ -48,6 +50,9 @@ public class MicInput : MonoBehaviour
         if (mAudio != null && Microphone.IsRecording(null))
         {
             mAudio.GetSpectrumData(mSamples, mAudio.clip.channels, FFTWindow.Blackman);
+            float[] data = new float[256];
+            mAudio.GetOutputData(data, 0);
+            
 
             // Filter
             float totalLoudness = 0;
@@ -83,45 +88,42 @@ public class MicInput : MonoBehaviour
                 }
             }
 
-            // Top 2개만 챙김
-            validPeaks.Sort((x, y) => { return y.Value.CompareTo(x.Value); }); // Y축 Sort
-
+            // Harmonics 필터링
             List<KeyValuePair<int, float>> targetPeaks = new List<KeyValuePair<int, float>>();
-            int peakNum = 0;
-            foreach (var peak in validPeaks)
+            for (int cur = 0; cur < validPeaks.Count - 1; cur++)
             {
-                if (!(peakNum < 2))
-                    break;
-                targetPeaks.Add(peak);
-                peakNum++;
+                for (int next = cur + 1; next < validPeaks.Count; next++)
+                {
+                    if (Mathf.Abs((validPeaks[cur].Key * 2) - validPeaks[next].Key) <= 1)
+                    {
+                        targetPeaks.Add(validPeaks[cur]);
+                        break;
+                    }
+                }
             }
 
             // 가장 낮은 Frequency가 앞에 오도록
             targetPeaks.Sort((x, y) => { return x.Key.CompareTo(y.Key); }); // X축 Sort
 
             // Add Note
+            var curTime = Time.time;
             foreach (var peak in targetPeaks)
             {
-                var freq = peak.Key / (float)mSamples.Length * FREQUENCY_MAX;
+                var freq = peak.Key / (float)mSamples.Length * mFrequencyMax;
                 var note = noteDbReader.AssumeNoteFromFrequency(freq);
 
-                mNoteList.Add(new TimeAndANote() { Note = note, Time = Time.time });
+                mNoteList.Add(new TimeAndANote() { Note = note, Time = curTime });
             }
 
 #if DEBUG_LINE
             // For Debug
             if (targetPeaks.Count > 0)
             {
-                //print("----------");
-                var peak = targetPeaks[0];
                 //print(peak.Key);
-
-                var freq = peak.Key / (float)mSamples.Length * FREQUENCY_MAX;
-                //print(freq);
-                var note = noteDbReader.AssumeNoteFromFrequency(freq);
-                //print(note);
-
-                Debug.DrawLine(new Vector3(Mathf.Log(peak.Key - 1), Mathf.Log(peak.Value), 3), new Vector3(Mathf.Log(peak.Key + 1), Mathf.Log(peak.Value), 3), Color.red);
+                foreach (var peak in targetPeaks)
+                {
+                    Debug.DrawLine(new Vector3(Mathf.Log(peak.Key - 1), Mathf.Log(peak.Value), 3), new Vector3(Mathf.Log(peak.Key + 1), Mathf.Log(peak.Value), 3), Color.red);
+                }
             }
 #endif
 
@@ -146,6 +148,7 @@ public class MicInput : MonoBehaviour
             //}
             //print(total);
         }
+        
     }
 
     void OnDisable()

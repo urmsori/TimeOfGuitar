@@ -37,9 +37,12 @@ public class PitchPatternMatcher : MonoBehaviour
         {
             foreach (var note in timeline.Notes)
             {
-                if (note == notes.Peek())
+                if (notes.Count > 0)
                 {
-                    notes.Dequeue();
+                    if (note == notes.Peek())
+                    {
+                        notes.Dequeue();
+                    }
                 }
             }
         }
