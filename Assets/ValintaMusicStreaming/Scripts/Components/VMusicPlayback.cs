@@ -24,7 +24,6 @@ namespace ValintaMusicStreaming
         public event PlaybackTimedOut OnPlaybackTimedOut;
 
         private AudioSource m_audioSource;
-        private VNetwork m_network;
         private VSong m_currentSong;
 
         private bool m_isSongSourceLoaded = false;
@@ -46,8 +45,6 @@ namespace ValintaMusicStreaming
             {
                 m_audioSource = GetComponent<AudioSource>();
             }
-
-            m_network = ValintaPlayer.Instance.GetNetworkInstance();
 
             ChangeState(PlayerState.Standby);
         }
@@ -71,10 +68,6 @@ namespace ValintaMusicStreaming
 
         #region Playback preparations
 
-        /// <summary>
-        /// Prepare song. Fetch source URL.
-        /// </summary>
-        /// <returns></returns>
         private IEnumerator PrepareSong()
         {
             if(m_currentSong == null)
@@ -85,69 +78,12 @@ namespace ValintaMusicStreaming
 
             OnLoading();
 
-            m_isSongSourceLoaded = false;
-            if(!m_network.CallGet(string.Concat(VStrings.APIV2, "genres/", m_currentSong.Playlist, "/musics/", m_currentSong.Id), SourceReceivedCallback))
-            {
-                m_network.CancelCalls();
-                OnError("Can't get song source");
-                yield break;
-            }
+            DisposeCurrentAudio();
 
-            float timeOut = Time.realtimeSinceStartup + VSettings.BaseTimeOut;
-            while (!m_isSongSourceLoaded)
-            {
-                if (Time.realtimeSinceStartup > timeOut)
-                {
-                    m_network.CancelCalls();
-                    OnTimedOut();
-                    StopAllCoroutines();
-                    yield break;
-                }
-                yield return null;
-            }
-        }
-        
-        /// <summary>
-        /// Callback for getting audio source URL.
-        /// </summary>
-        /// <param name="response"></param>
-        /// <param name="error"></param>
-        private void SourceReceivedCallback(string response, string error)
-        {
-            m_isSongSourceLoaded = true;
+            // m_audioSource.clip = clip;
+            m_audioSource.Play();
 
-            if (!string.IsNullOrEmpty(error))
-            {
-                OnError("Network error");
-                return;
-            }
-
-            var N = SimpleJSON.JSON.Parse(response);
-            string source = N["music"]["source"];
-
-            m_network.GetAudioClipFromSource(source, AudioClipReceivedCallback);
-        }
-
-        /// <summary>
-        /// Callback method for handling requested audio clip.
-        /// If clip is received, start playback immediately
-        /// </summary>
-        /// <param name="clip"></param>
-        private void AudioClipReceivedCallback(AudioClip clip)
-        {
-            if (clip != null)
-            {
-                DisposeCurrentAudio();
-
-                m_audioSource.clip = clip;
-                m_audioSource.Play();
-
-                OnStarted();
-            }
-            else
-            {
-                OnError("Could not get audio clip");
-            }
+            OnStarted();
         }
 
         /// <summary>

@@ -109,7 +109,11 @@ public class MicInput : MonoBehaviour
             var curTime = Time.time;
             foreach (var peak in targetPeaks)
             {
+<<<<<<< HEAD
                 var freq = peak.Key / (float)mSamples.Length * mFrequencyMax;
+=======
+                var freq = peak.Key * (AudioSettings.outputSampleRate / 2 ) / (float)mSamples.Length;
+>>>>>>> 39fe6cb71f5a006c2201add7294e64a04a8fec46
                 var note = noteDbReader.AssumeNoteFromFrequency(freq);
 
                 mNoteList.Add(new TimeAndANote() { Note = note, Time = curTime });

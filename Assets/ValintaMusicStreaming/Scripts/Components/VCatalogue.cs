@@ -165,8 +165,6 @@ namespace ValintaMusicStreaming
                 }
                 playlist.RandomizeSongOrder();
             }
-
-            VPlayerController.Instance.CatalogueReady();
         }
     }
 }
