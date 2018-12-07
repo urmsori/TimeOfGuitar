@@ -13,7 +13,7 @@ public class MicInput : MonoBehaviour
     public float bufferTimeMax = 2.0f;
 
     private const int SAMPLE_SIZE = 4096;
-    private const float LOUD_PERCENT_THRESHOLD = 2.0f;
+    private float LOUD_PERCENT_THRESHOLD = 2.0f;
 
     private AudioSource mAudio;
 
@@ -27,6 +27,11 @@ public class MicInput : MonoBehaviour
 
     public string deviceText = "";
     public float currentAverage = 0;
+    
+    public void SetThreshold(float value)
+    {
+        LOUD_PERCENT_THRESHOLD = value;
+    }
 
     // Use this for initialization
     void Start()
