@@ -8,11 +8,13 @@ public class ShowMatchedText : MonoBehaviour
     public PitchPatternMatcher matcher;
 
     // Use this for initialization
-    void Start()
+    void Update()
     {
-        matcher.onMatched.AddListener(() =>
+        string text = "";
+        foreach(var matched in matcher.matchedNames)
         {
-            GetComponent<Text>().text += "\nMatched";
-        });
+            text += matched + "\n";
+        }
+        GetComponent<Text>().text = text;
     }
 }

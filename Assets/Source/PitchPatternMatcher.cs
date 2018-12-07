@@ -9,6 +9,7 @@ public class PitchPatternMatcher : MonoBehaviour
     public NoteDBReader noteDBReader;
     public PitchAnalyzer analyzer;
     public string[] pitchNames = new string[0];
+    public List<string> matchedNames = new List<string>();
 
     [Serializable]
     public class MatchedEvent : UnityEvent { }
@@ -20,6 +21,11 @@ public class PitchPatternMatcher : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        matchedNames.Clear();
+
+        if (pitchNames.Length == 0)
+            return;
+
         Queue<ANote> notes = new Queue<ANote>();
         foreach (var name in pitchNames)
         {
@@ -38,10 +44,11 @@ public class PitchPatternMatcher : MonoBehaviour
             foreach (var note in timeline.Notes)
             {
                 if (notes.Count > 0)
-                {
-                    if (note == notes.Peek())
+                {                    
+                    if (note.EqualsOrDouble(notes.Peek()))
                     {
-                        notes.Dequeue();
+                        var deleted = notes.Dequeue();
+                        matchedNames.Add(deleted.Name);
                     }
                 }
             }

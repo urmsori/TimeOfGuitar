@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class NoteDBReader : MonoBehaviour
 {
-    public const string FileName = "NoteDB.txt";
+    public const string FileName = "NoteDB";
 
     public event Action<List<ANote>> ReadDone;
     public List<ANote> Values = new List<ANote>();
@@ -16,7 +16,9 @@ public class NoteDBReader : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        var lines = File.ReadAllLines(Path.Combine(Application.dataPath, FileName));
+        TextAsset textFile = Resources.Load<TextAsset>(FileName);
+        var lines = textFile.text.Split('\n');
+        //var lines = File.ReadAllLines(Path.Combine(Application.dataPath, FileName));
 
         int index = 0;
         foreach (var line in lines)

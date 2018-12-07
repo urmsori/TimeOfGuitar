@@ -13,7 +13,7 @@ public class MicInput : MonoBehaviour
     public float bufferTimeMax = 2.0f;
 
     private const int SAMPLE_SIZE = 4096;
-    private const float LOUD_PERCENT_THRESHOLD = 60.0f;
+    private const float LOUD_PERCENT_THRESHOLD = 2.0f;
 
     private AudioSource mAudio;
 
@@ -24,6 +24,9 @@ public class MicInput : MonoBehaviour
     public List<TimeAndANote> NoteBuffer { get { return mNoteList; } }
 
     float mFrequencyMax = 24000.0f; //AudioSettings.outputSampleRate / 2
+
+    public string deviceText = "";
+    public float currentAverage = 0;
 
     // Use this for initialization
     void Start()
@@ -36,9 +39,19 @@ public class MicInput : MonoBehaviour
         {
             deviceName = devs[0];
         }
-        print(deviceName);
 
-        mAudio.clip = Microphone.Start(deviceName, true, 1, 44100);
+        int min = 0;
+        int max = 0;
+        Microphone.GetDeviceCaps(deviceName, out min, out max);
+        deviceText = deviceName + ", " + max;
+        print(deviceText);
+
+        mAudio.clip = Microphone.Start(deviceName, true, 1, max);
+        while (!(Microphone.GetPosition(deviceName) > 1))
+        {
+            // Wait until the recording has started
+        }
+
         mAudio.loop = true;
 
         mAudio.Play();
@@ -50,9 +63,6 @@ public class MicInput : MonoBehaviour
         if (mAudio != null && Microphone.IsRecording(null))
         {
             mAudio.GetSpectrumData(mSamples, mAudio.clip.channels, FFTWindow.Blackman);
-            float[] data = new float[256];
-            mAudio.GetOutputData(data, 0);
-            
 
             // Filter
             float totalLoudness = 0;
@@ -61,6 +71,17 @@ public class MicInput : MonoBehaviour
                 totalLoudness += sample;
             }
             float averageLoudness = totalLoudness / mSamples.Length;
+            int upperLength = 0;
+            foreach (var sample in mSamples)
+            {
+                if (averageLoudness < sample)
+                {
+                    totalLoudness += sample;
+                    upperLength++;
+                }
+            }
+            averageLoudness = totalLoudness / upperLength;
+            currentAverage = Mathf.Log(averageLoudness);
 
             // Get Peaks
             List<KeyValuePair<int, float>> validPeaks = new List<KeyValuePair<int, float>>();
@@ -70,7 +91,9 @@ public class MicInput : MonoBehaviour
                 // For Debug
                 Debug.DrawLine(new Vector3(i - 1, mSamples[i] + 10, 0), new Vector3(i, mSamples[i + 1] + 10, 0), Color.red);
                 Debug.DrawLine(new Vector3(i - 1, Mathf.Log(mSamples[i - 1]) + 10, 2), new Vector3(i, Mathf.Log(mSamples[i]) + 10, 2), Color.cyan);
-                Debug.DrawLine(new Vector3(Mathf.Log(i - 1), mSamples[i - 1] - 10, 1), new Vector3(Mathf.Log(i), mSamples[i] - 10, 1), Color.green);
+                //Debug.DrawLine(new Vector3(Mathf.Log(i - 1), mSamples[i - 1] - 10, 1), new Vector3(Mathf.Log(i), mSamples[i] - 10, 1), Color.green);
+                var avgline = Mathf.Log(LOUD_PERCENT_THRESHOLD * averageLoudness);
+                Debug.DrawLine(new Vector3(Mathf.Log(i - 1), avgline, 1), new Vector3(Mathf.Log(i), avgline, 1), Color.green);
                 Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(mSamples[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(mSamples[i]), 3), Color.blue);
 #endif
 
@@ -88,15 +111,45 @@ public class MicInput : MonoBehaviour
                 }
             }
 
+            // N개의 Peak만 골라냄
+            List<KeyValuePair<int, float>> nPeaks = new List<KeyValuePair<int, float>>();
+            int maxPeakNum = 40;
+            foreach (var peak in validPeaks)
+            {
+                if (nPeaks.Count == 0)
+                {
+                    nPeaks.Add(peak);
+                    continue;
+                }
+                for (int i = 0; i < nPeaks.Count; i++)
+                {
+                    if (nPeaks[i].Value < peak.Value)
+                    {
+                        nPeaks.Insert(i, peak);
+                        if (nPeaks.Count > maxPeakNum)
+                        {
+                            nPeaks.RemoveAt(maxPeakNum);
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Harmonics 필터링
             List<KeyValuePair<int, float>> targetPeaks = new List<KeyValuePair<int, float>>();
-            for (int cur = 0; cur < validPeaks.Count - 1; cur++)
+            for (int cur = 0; cur < nPeaks.Count; cur++)
             {
-                for (int next = cur + 1; next < validPeaks.Count; next++)
+                for (int next = 0; next < nPeaks.Count; next++)
                 {
-                    if (Mathf.Abs((validPeaks[cur].Key * 2) - validPeaks[next].Key) <= 1)
+                    if (cur == next)
+                        continue;
+
+                    if (Mathf.Abs((nPeaks[cur].Key * 2) - nPeaks[next].Key) <= 1)
                     {
-                        targetPeaks.Add(validPeaks[cur]);
+#if DEBUG_LINE
+                        Debug.DrawLine(new Vector3(Mathf.Log(nPeaks[cur].Key - 1), Mathf.Log(nPeaks[cur].Value), 3), new Vector3(Mathf.Log(nPeaks[cur].Key + 1), Mathf.Log(nPeaks[cur].Value), 3), Color.red);
+#endif
+                        targetPeaks.Add(nPeaks[cur]);
                         break;
                     }
                 }
@@ -114,19 +167,6 @@ public class MicInput : MonoBehaviour
 
                 mNoteList.Add(new TimeAndANote() { Note = note, Time = curTime });
             }
-
-#if DEBUG_LINE
-            // For Debug
-            if (targetPeaks.Count > 0)
-            {
-                //print(peak.Key);
-                foreach (var peak in targetPeaks)
-                {
-                    Debug.DrawLine(new Vector3(Mathf.Log(peak.Key - 1), Mathf.Log(peak.Value), 3), new Vector3(Mathf.Log(peak.Key + 1), Mathf.Log(peak.Value), 3), Color.red);
-                }
-            }
-#endif
-
         }
 
         // Clear Old Note
@@ -139,16 +179,8 @@ public class MicInput : MonoBehaviour
                 if (mNoteList.Count == 0)
                     break;
             }
-
-            // Debug
-            //string total = "";
-            //foreach (var note in mNoteList)
-            //{
-            //    total += note.Time + ": " + note.Note.Name + "\n";
-            //}
-            //print(total);
         }
-        
+
     }
 
     void OnDisable()

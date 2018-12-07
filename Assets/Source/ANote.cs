@@ -15,6 +15,18 @@ public class ANote
         }
         return false;
     }
+    public bool EqualsOrDouble(ANote note)
+    {
+        if (Index == note.Index)
+            return true;
+        var diff = Index - note.Index * 2;
+        diff = diff < 0 ? -diff : diff;
+        if (diff <= 1)
+            return true;
+        diff = Index * 2 - note.Index;
+        diff = diff < 0 ? -diff : diff;
+        return diff <= 1;
+    }
 
     public override int GetHashCode()
     {
